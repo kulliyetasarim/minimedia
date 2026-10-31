@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 
+
+const BACKEND_URL = "https://secret-spell-r7w67r9v77pph545q-8000.app.github.dev/".replace(/\/+$/, "");
+
 const RESOLUTION_BOXES = [
   { label: "Retro / Eski Mobil", value: "320x240" },
   { label: "Banner / Özel", value: "600x300" },
@@ -10,7 +13,7 @@ const RESOLUTION_BOXES = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("video"); // 'video' | 'image'
+  const [activeTab, setActiveTab] = useState("video");
   const [loading, setLoading] = useState(false);
   const [downloadLink, setDownloadLink] = useState(null);
 
@@ -29,6 +32,10 @@ export default function App() {
   const [sharpen, setSharpen] = useState(false);
 
   const handleVideoSubmit = async () => {
+    if (!videoFile && !ytUrl) {
+      return alert("Lütfen bir video dosyası yükleyin veya YouTube linki girin.");
+    }
+
     setLoading(true);
     setDownloadLink(null);
     const formData = new FormData();
@@ -46,13 +53,13 @@ export default function App() {
         formData.append("volume", (volume / 100).toString());
       }
 
-      const res = await fetch(`http://localhost:8000${endpoint}`, {
+      const res = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: "POST",
         body: formData,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "İşlem başarısız");
-      setDownloadLink(`http://localhost:8000${data.download_url}`);
+      setDownloadLink(`${BACKEND_URL}${data.download_url}`);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -72,13 +79,13 @@ export default function App() {
     formData.append("sharpen", sharpen.toString());
 
     try {
-      const res = await fetch("http://localhost:8000/api/process-image", {
+      const res = await fetch(`${BACKEND_URL}/api/process-image`, {
         method: "POST",
         body: formData,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "İşlem başarısız");
-      setDownloadLink(`http://localhost:8000${data.download_url}`);
+      setDownloadLink(`${BACKEND_URL}${data.download_url}`);
     } catch (err) {
       alert(err.message);
     } finally {

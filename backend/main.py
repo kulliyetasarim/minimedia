@@ -4,7 +4,8 @@ import shutil
 import zipfile
 import subprocess
 from pathlib import Path
-from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException,Request,RedirectResponse
+from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -132,7 +133,8 @@ async def process_video(
     # Ses Seviyesi
     if volume != 1.0:
         cmd.extend(["-filter:a", f"volume={volume}"])
-
+    if target_format.lower() == "3gp":
+        cmd.extend(["-c:v", "mpeg4", "-c:a", "aac"])
     cmd.append(str(output_path))
 
     # Çalıştır
@@ -364,3 +366,29 @@ async def detect_feature_phone_and_redirect(request: Request, call_next):
             
     response = await call_next(request)
     return response
+
+@app.post("/api/process-video")
+async def process_video(
+    file: UploadFile = File(None),
+    youtube_url: str = Form(None),
+    target_format: str = Form("mp4"),
+    resolution: str = Form(None),
+    volume: float = Form(1.0)
+):
+    if not file and not youtube_url:
+        raise HTTPException(status_code=400, detail="Lütfen bir dosya veya YouTube URL'si sağlayın.")
+    
+    # YouTube indirme seçenekleri
+    ydl_opts = {
+        'format': 'best',
+        'outtmpl': str(STORAGE_DIR / '%(id)s.%(ext)s'),
+        'quiet': True,
+        'no_warnings': True,
+    }
+    
+    # YouTube Linki varsa indirme işlemi
+    if youtube_url:
+        import yt_dlp
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(youtube_url, download=True)
+            input_path = ydl.prepare_filename(info)

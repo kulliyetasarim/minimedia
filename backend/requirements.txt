@@ -1,7 +1,5 @@
 fastapi
 uvicorn
 python-multipart
-apscheduler
 imageio-ffmpeg
 pillow
-yt-dlp

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const BACKEND_URL = "https://minimedia-d2ns.onrender.com".replace(/\/+$/, "");
-const MAX_MB = 100; // backend'deki MAX_UPLOAD_MB ile aynı olsun
+const MAX_MB = 200; // backend'deki MAX_UPLOAD_MB ile aynı
 
 const RESOLUTION_BOXES = [
   { label: "Retro / Eski Mobil", value: "320x240" },
@@ -39,7 +40,6 @@ function errorText(status, text) {
   return `Sunucu hatası (${status}).`;
 }
 
-// fetch yükleme ilerlemesini vermediği için XMLHttpRequest kullanıyoruz
 function sendForm(url, formData, onUpload) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -86,7 +86,11 @@ function ProgressBar({ phase, percent }) {
   };
   const known = typeof percent === "number";
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.98 }}
+      transition={{ duration: 0.2 }}
       className="mt-5"
       role="progressbar"
       aria-label={labels[phase]}
@@ -109,7 +113,7 @@ function ProgressBar({ phase, percent }) {
           Sunucu uyuyorsa ilk istek bir dakikaya kadar sürebilir.
         </p>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -225,215 +229,313 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-800 dark:bg-[#0f0f11] dark:text-zinc-200 flex flex-col items-center py-12 px-4 font-sans transition-colors">
-      <button
+      {/* Gece/Gündüz Modu Butonu (Framed Mikro Etkileşimli) */}
+      <motion.button
         type="button"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         aria-label={theme === "dark" ? "Gündüz moduna geç" : "Gece moduna geç"}
         className={`fixed top-4 right-4 z-10 flex items-center gap-2 rounded-full border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 transition ${ui.focus}`}
       >
         <span aria-hidden="true">{theme === "dark" ? "☀️" : "🌙"}</span>
         {theme === "dark" ? "Gündüz" : "Gece"}
-      </button>
+      </motion.button>
 
-      <header className="mb-10 text-center">
+      {/* Header & Logo */}
+      <header className="mb-10 text-center flex flex-col items-center">
+        <img 
+          src="/logo.png" 
+          alt="minimedia logo" 
+          className="w-16 h-16 mb-3 object-contain invert opacity-90 hover:opacity-100 transition" 
+        />
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white mb-1">minimedia</h1>
         <p className="text-sm text-zinc-500">Minimal medya dönüştürücü ve ölçekleyici</p>
       </header>
 
+      {/* Tab Butonları */}
       <div role="tablist" className="flex bg-zinc-200 border border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 rounded-lg p-1 mb-8 w-full max-w-xl">
-        <button type="button" role="tab" aria-selected={activeTab === "video"} disabled={busy} onClick={() => switchTab("video")} className={tabClass("video")}>
+        <motion.button 
+          whileTap={{ scale: 0.98 }}
+          type="button" 
+          role="tab" 
+          aria-selected={activeTab === "video"} 
+          disabled={busy} 
+          onClick={() => switchTab("video")} 
+          className={tabClass("video")}
+        >
           🎬 Video
-        </button>
-        <button type="button" role="tab" aria-selected={activeTab === "image"} disabled={busy} onClick={() => switchTab("image")} className={tabClass("image")}>
+        </motion.button>
+        <motion.button 
+          whileTap={{ scale: 0.98 }}
+          type="button" 
+          role="tab" 
+          aria-selected={activeTab === "image"} 
+          disabled={busy} 
+          onClick={() => switchTab("image")} 
+          className={tabClass("image")}
+        >
           🖼️ Fotoğraf Düzenle
-        </button>
+        </motion.button>
       </div>
 
-      <div className="w-full max-w-xl bg-white border border-zinc-200 dark:bg-zinc-900/60 dark:border-zinc-800/80 backdrop-blur rounded-2xl p-6 shadow-xl">
-        {activeTab === "video" ? (
-          <div className="space-y-6">
-            <div>
-              <label htmlFor="video-file" className={ui.label}>Video Yükle</label>
-              <input
-                id="video-file"
-                type="file"
-                accept="video/*,audio/*"
-                disabled={busy}
-                onChange={(e) => { setVideoFile(e.target.files[0] || null); resetResult(); }}
-                className={ui.file}
-              />
-            </div>
-
-            <div>
-              <span className={ui.label}>Hedef Format</span>
-              <div className="grid grid-cols-5 gap-2 mt-2">
-                {VIDEO_FORMATS.map((fmt) => (
-                  <button
-                    key={fmt}
-                    type="button"
-                    aria-pressed={videoFormat === fmt}
-                    disabled={busy}
-                    onClick={() => setVideoFormat(fmt)}
-                    className={`py-1.5 text-xs font-mono rounded-lg border transition ${ui.focus} ${videoFormat === fmt ? ui.pickOn : ui.pickOff}`}
-                  >
-                    .{fmt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {videoFormat !== "mp3" && (
+      {/* Framer Motion ile Akıcı Sekme Kartı */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 12, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -12, scale: 0.98 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="w-full max-w-xl bg-white border border-zinc-200 dark:bg-zinc-900/60 dark:border-zinc-800/80 backdrop-blur rounded-2xl p-6 shadow-xl"
+        >
+          {activeTab === "video" ? (
+            <div className="space-y-6">
+              {/* Video Dosyası Seçimi */}
               <div>
-                <span className={ui.label}>Boyut Değiştir (isteğe bağlı)</span>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {RESOLUTION_BOXES.map((box) => {
-                    const on = selectedRes === box.value;
-                    return (
-                      <button
-                        key={box.value}
-                        type="button"
-                        aria-pressed={on}
-                        disabled={busy}
-                        onClick={() => setSelectedRes(on ? "" : box.value)}
-                        className={`p-2.5 rounded-lg border flex items-center justify-between text-left transition ${ui.focus} ${
-                          on
-                            ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                            : "border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-zinc-700"
-                        }`}
-                      >
-                        <span className="flex flex-col">
-                          <span className="text-xs font-mono font-bold">{box.value}</span>
-                          <span className="text-[10px] text-zinc-500">{box.label}</span>
-                        </span>
-                        <span
-                          aria-hidden="true"
-                          className={`h-4 w-4 rounded border flex items-center justify-center text-[10px] ${on ? "bg-emerald-500 border-emerald-500 text-white" : "border-zinc-400 dark:border-zinc-700"}`}
-                        >
-                          {on ? "✓" : ""}
-                        </span>
-                      </button>
-                    );
-                  })}
+                <label htmlFor="video-file" className={ui.label}>Video Yükle</label>
+                <input
+                  id="video-file"
+                  type="file"
+                  accept="video/*,audio/*"
+                  disabled={busy}
+                  onChange={(e) => { setVideoFile(e.target.files[0] || null); resetResult(); }}
+                  className={ui.file}
+                />
+              </div>
+
+              {/* Video Hedef Format Butonları */}
+              <div>
+                <span className={ui.label}>Hedef Format</span>
+                <div className="grid grid-cols-5 gap-2 mt-2">
+                  {VIDEO_FORMATS.map((fmt) => (
+                    <motion.button
+                      key={fmt}
+                      type="button"
+                      aria-pressed={videoFormat === fmt}
+                      disabled={busy}
+                      onClick={() => setVideoFormat(fmt)}
+                      whileHover={busy ? {} : { scale: 1.06 }}
+                      whileTap={busy ? {} : { scale: 0.94 }}
+                      transition={{ duration: 0.1 }}
+                      className={`py-1.5 text-xs font-mono rounded-lg border transition ${ui.focus} ${videoFormat === fmt ? ui.pickOn : ui.pickOff}`}
+                    >
+                      .{fmt}
+                    </motion.button>
+                  ))}
                 </div>
               </div>
+
+              {/* Çözünürlük Seçimi */}
+              {videoFormat !== "mp3" && (
+                <div>
+                  <span className={ui.label}>Boyut Değiştir (isteğe bağlı)</span>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {RESOLUTION_BOXES.map((box) => {
+                      const on = selectedRes === box.value;
+                      return (
+                        <motion.button
+                          key={box.value}
+                          type="button"
+                          aria-pressed={on}
+                          disabled={busy}
+                          onClick={() => setSelectedRes(on ? "" : box.value)}
+                          whileHover={busy ? {} : { scale: 1.02 }}
+                          whileTap={busy ? {} : { scale: 0.97 }}
+                          transition={{ duration: 0.1 }}
+                          className={`p-2.5 rounded-lg border flex items-center justify-between text-left transition ${ui.focus} ${
+                            on
+                              ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                              : "border-zinc-300 bg-white hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950/40 dark:hover:border-zinc-700"
+                          }`}
+                        >
+                          <span className="flex flex-col">
+                            <span className="text-xs font-mono font-bold">{box.value}</span>
+                            <span className="text-[10px] text-zinc-500">{box.label}</span>
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            className={`h-4 w-4 rounded border flex items-center justify-center text-[10px] ${on ? "bg-emerald-500 border-emerald-500 text-white" : "border-zinc-400 dark:border-zinc-700"}`}
+                          >
+                            {on ? "✓" : ""}
+                          </span>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Ses Düzeyi */}
+              <div>
+                <div className="flex justify-between text-xs font-mono text-zinc-500 dark:text-zinc-400 mb-2">
+                  <label htmlFor="volume">Ses Düzeyi</label>
+                  <span>%{volume}</span>
+                </div>
+                <input
+                  id="volume"
+                  type="range"
+                  min="0"
+                  max="200"
+                  value={volume}
+                  disabled={busy}
+                  onChange={(e) => setVolume(Number(e.target.value))}
+                  className="w-full accent-zinc-900 dark:accent-white h-1.5 cursor-pointer"
+                />
+              </div>
+
+              {/* Video Dönüştür Butonu */}
+              <motion.button
+                type="button"
+                disabled={busy || !videoFile}
+                onClick={handleVideoSubmit}
+                whileHover={busy || !videoFile ? {} : { scale: 1.015 }}
+                whileTap={busy || !videoFile ? {} : { scale: 0.975 }}
+                transition={{ duration: 0.1 }}
+                className={`${ui.primary} ${ui.focus}`}
+              >
+                {busy ? "İşleniyor..." : "Videoyu Dönüştür"}
+              </motion.button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Fotoğraf Dosyası Seçimi */}
+              <div>
+                <label htmlFor="image-file" className={ui.label}>Fotoğraf Yükle</label>
+                <input
+                  id="image-file"
+                  type="file"
+                  accept="image/*"
+                  disabled={busy}
+                  onChange={(e) => { setImageFile(e.target.files[0] || null); resetResult(); }}
+                  className={ui.file}
+                />
+              </div>
+
+              {/* Fotoğraf Hedef Format Butonları */}
+              <div>
+                <span className={ui.label}>Hedef Format</span>
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {IMAGE_FORMATS.map((fmt) => (
+                    <motion.button
+                      key={fmt}
+                      type="button"
+                      aria-pressed={imgFormat === fmt}
+                      disabled={busy}
+                      onClick={() => setImgFormat(fmt)}
+                      whileHover={busy ? {} : { scale: 1.06 }}
+                      whileTap={busy ? {} : { scale: 0.94 }}
+                      transition={{ duration: 0.1 }}
+                      className={`py-1.5 text-xs font-mono rounded-lg border transition ${ui.focus} ${imgFormat === fmt ? ui.pickOn : ui.pickOff}`}
+                    >
+                      .{fmt}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ölçek Büyütme Butonları */}
+              <div>
+                <span className={ui.label}>Ölçek Büyüt (Scale)</span>
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {SCALES.map((s) => (
+                    <motion.button
+                      key={s.val}
+                      type="button"
+                      aria-pressed={scale === s.val}
+                      disabled={busy}
+                      onClick={() => setScale(s.val)}
+                      whileHover={busy ? {} : { scale: 1.04 }}
+                      whileTap={busy ? {} : { scale: 0.96 }}
+                      transition={{ duration: 0.1 }}
+                      className={`py-2 text-xs rounded-lg border transition ${ui.focus} ${
+                        scale === s.val
+                          ? "border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
+                          : "border-zinc-300 hover:border-zinc-500 dark:border-zinc-800 dark:hover:border-zinc-700"
+                      }`}
+                    >
+                      {s.label}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Keskinleştirme Checkbox */}
+              <label className="flex items-center space-x-2 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={sharpen}
+                  disabled={busy}
+                  onChange={(e) => setSharpen(e.target.checked)}
+                  className="rounded border-zinc-400 dark:bg-zinc-950 dark:border-zinc-700"
+                />
+                <span>Keskinleştirme ve Kalite Düzeltme Uygula</span>
+              </label>
+
+              {/* Fotoğraf İşle Butonu */}
+              <motion.button
+                type="button"
+                disabled={busy || !imageFile}
+                onClick={handleImageSubmit}
+                whileHover={busy || !imageFile ? {} : { scale: 1.015 }}
+                whileTap={busy || !imageFile ? {} : { scale: 0.975 }}
+                transition={{ duration: 0.1 }}
+                className={`${ui.primary} ${ui.focus}`}
+              >
+                {busy ? "İşleniyor..." : "Fotoğrafı İşle ve Kaydet"}
+              </motion.button>
+            </div>
+          )}
+
+          {/* Animasyonlu İlerleme Çubuğu */}
+          <AnimatePresence>
+            {progress && <ProgressBar phase={progress.phase} percent={progress.percent} />}
+          </AnimatePresence>
+
+          {/* Animasyonlu Hata Mesajı Kutusu */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.2 }}
+                role="alert"
+                className="mt-5 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300"
+              >
+                {error}
+              </motion.div>
             )}
+          </AnimatePresence>
 
-            <div>
-              <div className="flex justify-between text-xs font-mono text-zinc-500 dark:text-zinc-400 mb-2">
-                <label htmlFor="volume">Ses Düzeyi</label>
-                <span>%{volume}</span>
-              </div>
-              <input
-                id="volume"
-                type="range"
-                min="0"
-                max="200"
-                value={volume}
-                disabled={busy}
-                onChange={(e) => setVolume(Number(e.target.value))}
-                className="w-full accent-zinc-900 dark:accent-white h-1.5 cursor-pointer"
-              />
-            </div>
-
-            <button type="button" disabled={busy || !videoFile} onClick={handleVideoSubmit} className={`${ui.primary} ${ui.focus}`}>
-              {busy ? "İşleniyor..." : "Videoyu Dönüştür"}
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div>
-              <label htmlFor="image-file" className={ui.label}>Fotoğraf Yükle</label>
-              <input
-                id="image-file"
-                type="file"
-                accept="image/*"
-                disabled={busy}
-                onChange={(e) => { setImageFile(e.target.files[0] || null); resetResult(); }}
-                className={ui.file}
-              />
-            </div>
-
-            <div>
-              <span className={ui.label}>Hedef Format</span>
-              <div className="grid grid-cols-4 gap-2 mt-2">
-                {IMAGE_FORMATS.map((fmt) => (
-                  <button
-                    key={fmt}
-                    type="button"
-                    aria-pressed={imgFormat === fmt}
-                    disabled={busy}
-                    onClick={() => setImgFormat(fmt)}
-                    className={`py-1.5 text-xs font-mono rounded-lg border transition ${ui.focus} ${imgFormat === fmt ? ui.pickOn : ui.pickOff}`}
-                  >
-                    .{fmt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <span className={ui.label}>Ölçek Büyüt (Scale)</span>
-              <div className="grid grid-cols-4 gap-2 mt-2">
-                {SCALES.map((s) => (
-                  <button
-                    key={s.val}
-                    type="button"
-                    aria-pressed={scale === s.val}
-                    disabled={busy}
-                    onClick={() => setScale(s.val)}
-                    className={`py-2 text-xs rounded-lg border transition ${ui.focus} ${
-                      scale === s.val
-                        ? "border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
-                        : "border-zinc-300 hover:border-zinc-500 dark:border-zinc-800 dark:hover:border-zinc-700"
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <label className="flex items-center space-x-2 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={sharpen}
-                disabled={busy}
-                onChange={(e) => setSharpen(e.target.checked)}
-                className="rounded border-zinc-400 dark:bg-zinc-950 dark:border-zinc-700"
-              />
-              <span>Keskinleştirme ve Kalite Düzeltme Uygula</span>
-            </label>
-
-            <button type="button" disabled={busy || !imageFile} onClick={handleImageSubmit} className={`${ui.primary} ${ui.focus}`}>
-              {busy ? "İşleniyor..." : "Fotoğrafı İşle ve Kaydet"}
-            </button>
-          </div>
-        )}
-
-        {progress && <ProgressBar phase={progress.phase} percent={progress.percent} />}
-
-        {error && (
-          <div role="alert" className="mt-5 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
-            {error}
-          </div>
-        )}
-
-        {downloadLink && (
-          <div className="mt-6 p-4 rounded-xl border border-emerald-300 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20 flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">İşlem Tamamlandı</span>
-              <span className="text-[10px] text-zinc-500">Dosyanız 1 saat sonra sunucudan otomatik silinecektir.</span>
-            </div>
-            <a
-              href={downloadLink}
-              download
-              className={`px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-semibold rounded-lg transition ${ui.focus}`}
-            >
-              İndir
-            </a>
-          </div>
-        )}
-      </div>
+          {/* Animasyonlu İndirme Bağlantısı Kutusu */}
+          <AnimatePresence>
+            {downloadLink && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="mt-6 p-4 rounded-xl border border-emerald-300 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20 flex items-center justify-between"
+              >
+                <div className="flex flex-col">
+                  <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">İşlem Tamamlandı</span>
+                  <span className="text-[10px] text-zinc-500">Dosyanız 1 saat sonra sunucudan otomatik silinecektir.</span>
+                </div>
+                <motion.a
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  href={downloadLink}
+                  download
+                  className={`px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-semibold rounded-lg transition ${ui.focus}`}
+                >
+                  İndir
+                </motion.a>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

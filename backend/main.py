@@ -18,7 +18,7 @@ STORAGE = Path(__file__).parent / "storage"
 STORAGE.mkdir(exist_ok=True)
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
 
-MAX_UPLOAD_MB = 100          # yükleme sınırı (frontend'deki MAX_MB ile aynı olsun)
+MAX_UPLOAD_MB = 200          # yükleme sınırı (frontend'deki MAX_MB ile aynı olsun)
 KEEP_SECONDS = 3600          # dosyalar 1 saat sonra silinir
 JOB_TIMEOUT = 15 * 60        # tek video işi en fazla 15 dakika
 MAX_PARALLEL_JOBS = 2        # aynı anda en fazla 2 ffmpeg
